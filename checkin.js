@@ -1,8 +1,9 @@
-// --- 1. CONFIGURAÇÕES INICIAIS ---
-// Substitua pelos seus dados do Supabase
+// ======================================================
+// 1. CONFIGURAÇÕES INICIAIS
+// ======================================================
 const SUPABASE_URL = 'https://yyblrudvyhbvcssqtsja.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5YmxydWR2eWhidmNzc3F0c2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5ODM5NDAsImV4cCI6MjA4MTU1OTk0MH0.dMuERb-F1G9Jd4ef0Xp5AixhNb6__uFoiYM9fJALmA8'; 
-// Coloque aqui o SEU email de administrador para ver o botão secreto
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5YmxydWR2eWhidmNzc3F0c2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5ODM5NDAsImV4cCI6MjA4MTU1OTk0MH0.dMuERb-F1G9Jd4ef0Xp5AixhNb6__uFoiYM9fJALmA8';
+
 const EMAIL_CHEFE = 'seu_email_admin@exemplo.com';
 
 const supabaseClient = supabase.createClient(
@@ -10,163 +11,168 @@ const supabaseClient = supabase.createClient(
   SUPABASE_ANON_KEY
 );
 
-// --- 2. VERIFICAÇÃO DE SEGURANÇA E CARREGAMENTO DE PERFIL ---
+// ======================================================
+// 2. VERIFICAR USUÁRIO + CARREGAR NOME
+// ======================================================
 async function verificarUsuario() {
-    // 1️⃣ Pega a sessão primeiro
-    const { data: sessionData, error: sessionError } =
+    const { data: sessionData, error } =
         await supabaseClient.auth.getSession();
 
-    if (sessionError || !sessionData.session) {
+    if (error || !sessionData.session) {
         window.location.href = "index.html";
         return;
     }
 
     const user = sessionData.session.user;
 
-    // 2️⃣ Busca o perfil
+    // Nome padrão
     let nomeExibicao = user.email;
 
-    const { data: perfil, error } = await supabaseClient
+    // Buscar perfil
+    const { data: perfil } = await supabaseClient
         .from('perfis')
         .select('nome')
         .eq('id', user.id)
-        .maybeSingle(); // 👈 evita erro se não existir
+        .maybeSingle();
 
-    if (error) {
-        console.error('Erro ao buscar perfil:', error);
-    }
-
-    if (perfil?.nome) {
+    if (perfil && perfil.nome) {
         nomeExibicao = perfil.nome;
     }
 
-    // 3️⃣ Preenche o campo
+    // Preencher campo
     const campoNome = document.getElementById('nomeFuncionario');
     if (campoNome) {
         campoNome.value = nomeExibicao;
     }
 
-    // 4️⃣ Verifica admin
+    // Mostrar painel admin
     if (user.email === EMAIL_CHEFE) {
-        document.getElementById('painelAdmin').style.display = 'block';
+        const painel = document.getElementById('painelAdmin');
+        if (painel) painel.style.display = 'block';
     }
 }
 
-
-
-// Executa assim que a página abre
+// Executa ao carregar a página
 verificarUsuario();
 
-// --- 3. FUNÇÃO AUXILIAR: MOSTRAR/ESCONDER CAMPO MOTIVO ---
+// ======================================================
+// 3. MOSTRAR / ESCONDER MOTIVO
+// ======================================================
 function toggleMotivo() {
     const checkbox = document.getElementById('foraDaUnidade');
     const divMotivo = document.getElementById('campoMotivo');
-    
+    const textoMotivo = document.getElementById('textoMotivo');
+
     if (checkbox.checked) {
         divMotivo.style.display = 'block';
-        document.getElementById('textoMotivo').focus();
+        textoMotivo.focus();
     } else {
         divMotivo.style.display = 'none';
-        document.getElementById('textoMotivo').value = ''; // Limpa
+        textoMotivo.value = '';
     }
 }
 
-// --- 4. FUNÇÃO PRINCIPAL: FAZER CHECK-IN ---
+// ======================================================
+// 4. FAZER CHECK-IN
+// ======================================================
 async function fazerCheckIn() {
     const nome = document.getElementById('nomeFuncionario').value;
     const btn = document.getElementById('btnCheckIn');
     const status = document.getElementById('status');
-    
-    // Elementos de "Fora da Unidade"
+
     const isExterno = document.getElementById('foraDaUnidade').checked;
     const motivo = document.getElementById('textoMotivo').value;
 
-    if (!nome) { 
-        alert("Erro: Nome não carregado."); 
-        return; 
+    if (!nome) {
+        alert("Erro: Nome não carregado.");
+        return;
     }
 
-    // Validação: Se marcou externo, TEM que dizer o motivo
     if (isExterno && !motivo) {
-        alert("Por favor, informe o motivo ou local do trabalho externo.");
-        document.getElementById('textoMotivo').focus();
+        alert("Informe o motivo ou local do trabalho externo.");
         return;
     }
 
-    // Bloqueia botão para evitar duplo clique
     btn.disabled = true;
-    btn.innerText = "Obtendo Localização...";
-
-    // Verifica suporte a GPS
-    if (!navigator.geolocation) {
-        alert("Erro: Seu navegador não suporta geolocalização.");
-        btn.disabled = false;
-        return;
-    }
-  
-    // funcao checkin GPS
-  
-    navigator.geolocation.getCurrentPosition(async (position) => {
-    const { latitude, longitude } = position.coords;
-    btn.innerText = "Registrando...";
+    btn.innerText = "Obtendo localização...";
 
     const { data: sessionData } =
         await supabaseClient.auth.getSession();
 
     const user = sessionData.session.user;
 
-    const dadosParaSalvar = {
-        user_id: user.id,
-        nome,
-        coordenadas: `${latitude}, ${longitude}`,
-        motivo_externo: isExterno ? motivo : null
-    };
-
-    const { error } = await supabaseClient
-        .from('checkins')
-        .insert(dadosParaSalvar);
-
-    if (error) {
-        console.error(error);
-        status.innerText = "Erro ao registrar no sistema.";
-        status.style.color = "red";
-    } else {
-        status.innerText = "✅ Ponto registrado com sucesso!";
-        status.style.color = "green";
-        document.getElementById('foraDaUnidade').checked = false;
-        toggleMotivo();
+    if (!navigator.geolocation) {
+        alert("Navegador não suporta geolocalização.");
+        btn.disabled = false;
+        return;
     }
 
-    btn.disabled = false;
-    btn.innerText = "Fazer Check-in";
-});
+    navigator.geolocation.getCurrentPosition(async (position) => {
+        const { latitude, longitude } = position.coords;
 
-// --- 5. FUNÇÃO: ATUALIZAR NOME DO PERFIL ---
+        btn.innerText = "Registrando...";
+
+        const dados = {
+            user_id: user.id,
+            nome,
+            coordenadas: `${latitude}, ${longitude}`,
+            motivo_externo: isExterno ? motivo : null
+        };
+
+        const { error } = await supabaseClient
+            .from('checkins')
+            .insert(dados);
+
+        if (error) {
+            console.error(error);
+            status.innerText = "Erro ao registrar check-in.";
+            status.style.color = "red";
+        } else {
+            status.innerText = "✅ Check-in registrado com sucesso!";
+            status.style.color = "green";
+            document.getElementById('foraDaUnidade').checked = false;
+            toggleMotivo();
+        }
+
+        btn.disabled = false;
+        btn.innerText = "Fazer Check-in";
+    }, () => {
+        alert("Permita o acesso à localização.");
+        btn.disabled = false;
+        btn.innerText = "Fazer Check-in";
+    });
+}
+
+// ======================================================
+// 5. ATUALIZAR NOME DO PERFIL
+// ======================================================
 async function atualizarNome() {
     const novoNome = prompt("Como deseja ser chamado?");
-    
     if (!novoNome) return;
 
-    // Pega o ID do usuário logado
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: sessionData } =
+        await supabaseClient.auth.getSession();
 
-    // Atualiza na tabela 'perfis'
-    const { error } = await supabase
+    const user = sessionData.session.user;
+
+    const { error } = await supabaseClient
         .from('perfis')
         .update({ nome: novoNome })
         .eq('id', user.id);
 
     if (error) {
-        alert("Erro ao atualizar nome no banco de dados.");
+        alert("Erro ao atualizar nome.");
         console.error(error);
     } else {
-        alert("Nome atualizado com sucesso!");
         document.getElementById('nomeFuncionario').value = novoNome;
+        alert("Nome atualizado com sucesso!");
     }
 }
 
-// --- 6. FUNÇÃO: LOGOUT / SAIR ---
+// ======================================================
+// 6. LOGOUT
+// ======================================================
 async function sair() {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     window.location.href = "index.html";
 }
