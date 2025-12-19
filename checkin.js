@@ -103,46 +103,43 @@ async function fazerCheckIn() {
         btn.disabled = false;
         return;
     }
-
+  
+    // funcao checkin GPS
+  
     navigator.geolocation.getCurrentPosition(async (position) => {
-        const { latitude, longitude } = position.coords;
-        btn.innerText = "Registrando...";
-        
-        // Prepara os dados
-        const dadosParaSalvar = { 
-            nome: nome, 
-            coordenadas: `${latitude}, ${longitude}`,
-            motivo_externo: isExterno ? motivo : null 
-        };
+    const { latitude, longitude } = position.coords;
+    btn.innerText = "Registrando...";
 
-        // Envia para o Supabase
-        const { error } = await supabase
-            .from('checkins')
-            .insert(dadosParaSalvar);
+    const { data: sessionData } =
+        await supabaseClient.auth.getSession();
 
-        if (error) {
-            console.error(error);
-            status.innerText = "Erro ao registrar no sistema.";
-            status.style.color = "red";
-        } else {
-            status.innerText = "✅ Ponto registrado com sucesso!";
-            status.style.color = "green";
-            
-            // Limpar campos de exceção após sucesso
-            document.getElementById('foraDaUnidade').checked = false;
-            toggleMotivo(); 
-        }
-        
-        btn.disabled = false;
-        btn.innerText = "Fazer Check-in";
+    const user = sessionData.session.user;
 
-    }, (erro) => {
-        console.error(erro);
-        alert("É necessário permitir a localização para bater o ponto.");
-        btn.disabled = false;
-        btn.innerText = "Fazer Check-in";
-    });
-}
+    const dadosParaSalvar = {
+        user_id: user.id,
+        nome,
+        coordenadas: `${latitude}, ${longitude}`,
+        motivo_externo: isExterno ? motivo : null
+    };
+
+    const { error } = await supabaseClient
+        .from('checkins')
+        .insert(dadosParaSalvar);
+
+    if (error) {
+        console.error(error);
+        status.innerText = "Erro ao registrar no sistema.";
+        status.style.color = "red";
+    } else {
+        status.innerText = "✅ Ponto registrado com sucesso!";
+        status.style.color = "green";
+        document.getElementById('foraDaUnidade').checked = false;
+        toggleMotivo();
+    }
+
+    btn.disabled = false;
+    btn.innerText = "Fazer Check-in";
+});
 
 // --- 5. FUNÇÃO: ATUALIZAR NOME DO PERFIL ---
 async function atualizarNome() {
