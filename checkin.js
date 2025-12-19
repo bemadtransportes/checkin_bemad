@@ -12,36 +12,37 @@ const supabaseClient = supabase.createClient(
 
 // --- 2. VERIFICAÇÃO DE SEGURANÇA E CARREGAMENTO DE PERFIL ---
 async function verificarUsuario() {
-    // Verifica se tem alguém logado
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user }, error: userError } =
+        await supabaseClient.auth.getUser();
 
-    if (!user) {
-        // Se não tiver logado, chuta para a tela de login
+    if (userError || !user) {
         window.location.href = "index.html";
         return;
     }
 
-    // --- Busca o nome na tabela 'perfis' ---
-    let nomeExibicao = user.email; // Começa com o email como padrão
+    let nomeExibicao = user.email;
 
-    const { data: perfil, error } = await supabase
+    const { data: perfil, error } = await supabaseClient
         .from('perfis')
         .select('nome')
         .eq('id', user.id)
         .single();
 
-    if (perfil && perfil.nome) {
+    if (error) {
+        console.error('Erro ao buscar perfil:', error);
+    }
+
+    if (perfil?.nome) {
         nomeExibicao = perfil.nome;
     }
 
-    // Preenche o campo na tela
     document.getElementById('nomeFuncionario').value = nomeExibicao;
 
-    // --- Verifica se é o Chefe ---
     if (user.email === EMAIL_CHEFE) {
         document.getElementById('painelAdmin').style.display = 'block';
     }
 }
+
 
 // Executa assim que a página abre
 verificarUsuario();
