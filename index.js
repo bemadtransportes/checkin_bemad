@@ -19,9 +19,9 @@ async function fazerLogin() {
     btn.disabled = true;
     btn.innerText = "Verificando...";
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password
     });
 
     if (error) {
@@ -29,7 +29,6 @@ async function fazerLogin() {
         btn.disabled = false;
         btn.innerText = "Entrar";
     } else {
-        // SUCESSO: Vai para a tela de check-in
         window.location.href = "checkin.html";
     }
 }
