@@ -4,70 +4,65 @@
 const SUPABASE_URL = 'https://yyblrudvyhbvcssqtsja.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5YmxydWR2eWhidmNzc3F0c2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5ODM5NDAsImV4cCI6MjA4MTU1OTk0MH0.dMuERb-F1G9Jd4ef0Xp5AixhNb6__uFoiYM9fJALmA8';
 
-const EMAIL_CHEFE = 'seu_email_admin@exemplo.com';
-
 const supabaseClient = supabase.createClient(
   SUPABASE_URL,
   SUPABASE_ANON_KEY
 );
 
 // ======================================================
-// 2. VERIFICAR USUÁRIO + CARREGAR NOME
+// 2. VERIFICAR USUÁRIO + PERFIL (NOME + CARGO)
 // ======================================================
 async function verificarUsuario() {
-    const { data: sessionData, error } =
+    const { data: sessionData, error: sessionError } =
         await supabaseClient.auth.getSession();
 
-    if (error || !sessionData.session) {
+    if (sessionError || !sessionData.session) {
         window.location.href = "index.html";
         return;
     }
 
     const user = sessionData.session.user;
 
-    // Nome padrão
-    let nomeExibicao = user.email;
-
-    // Buscar perfil
-    const { data: perfil } = await supabaseClient
+    const { data: perfil, error } = await supabaseClient
         .from('perfis')
-        .select('nome')
+        .select('nome, cargo')
         .eq('id', user.id)
-        .maybeSingle();
+        .single();
 
-    if (perfil && perfil.nome) {
-        nomeExibicao = perfil.nome;
+    if (error || !perfil) {
+        console.error(error);
+        alert("Perfil inválido. Contate o administrador.");
+        await supabaseClient.auth.signOut();
+        window.location.href = "index.html";
+        return;
     }
 
-    // Preencher campo
-    const campoNome = document.getElementById('nomeFuncionario');
-    if (campoNome) {
-        campoNome.value = nomeExibicao;
-    }
+    // Nome exibido
+    document.getElementById('nomeFuncionario').value =
+        perfil.nome || user.email;
 
-    // Mostrar painel admin
-    if (user.email === EMAIL_CHEFE) {
-        const painel = document.getElementById('painelAdmin');
-        if (painel) painel.style.display = 'block';
+    // Painel admin (SEGURANÇA REAL)
+    if (perfil.cargo === 'admin') {
+        document.getElementById('painelAdmin').style.display = 'block';
     }
 }
 
-// Executa ao carregar a página
+// Executa ao carregar
 verificarUsuario();
 
 // ======================================================
-// 3. MOSTRAR / ESCONDER MOTIVO
+// 3. MOSTRAR / ESCONDER MOTIVO (EXTERNO)
 // ======================================================
 function toggleMotivo() {
     const checkbox = document.getElementById('foraDaUnidade');
-    const divMotivo = document.getElementById('campoMotivo');
+    const campoMotivo = document.getElementById('campoMotivo');
     const textoMotivo = document.getElementById('textoMotivo');
 
     if (checkbox.checked) {
-        divMotivo.style.display = 'block';
+        campoMotivo.style.display = 'block';
         textoMotivo.focus();
     } else {
-        divMotivo.style.display = 'none';
+        campoMotivo.style.display = 'none';
         textoMotivo.value = '';
     }
 }
@@ -84,12 +79,12 @@ async function fazerCheckIn() {
     const motivo = document.getElementById('textoMotivo').value;
 
     if (!nome) {
-        alert("Erro: Nome não carregado.");
+        alert("Nome não carregado.");
         return;
     }
 
     if (isExterno && !motivo) {
-        alert("Informe o motivo ou local do trabalho externo.");
+        alert("Informe o local ou motivo do trabalho externo.");
         return;
     }
 
@@ -102,7 +97,7 @@ async function fazerCheckIn() {
     const user = sessionData.session.user;
 
     if (!navigator.geolocation) {
-        alert("Navegador não suporta geolocalização.");
+        alert("Geolocalização não suportada.");
         btn.disabled = false;
         return;
     }
@@ -144,7 +139,7 @@ async function fazerCheckIn() {
 }
 
 // ======================================================
-// 5. ATUALIZAR NOME DO PERFIL
+// 5. ATUALIZAR NOME (SEM ALTERAR CARGO)
 // ======================================================
 async function atualizarNome() {
     const novoNome = prompt("Como deseja ser chamado?");
