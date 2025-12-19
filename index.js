@@ -6,29 +6,56 @@ const supabaseClient = supabase.createClient(
 );
 
 async function fazerLogin() {
-    const email = document.getElementById('email').value;
+    const email = document.getElementById('email').value.trim();
     const password = document.getElementById('senha').value;
     const btn = document.getElementById('btnEntrar');
     const msg = document.getElementById('msgErro');
 
+    msg.innerText = "";
+
     if (!email || !password) {
-        msg.innerText = "Preencha tudo.";
+        msg.innerText = "Informe email e senha.";
         return;
     }
 
     btn.disabled = true;
     btn.innerText = "Verificando...";
 
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email,
-        password
-    });
+    // 1️⃣ Tenta login
+    const { data, error } =
+        await supabaseClient.auth.signInWithPassword({
+            email,
+            password
+        });
 
+    // 2️⃣ Erro explícito
     if (error) {
-        msg.innerText = "Dados incorretos.";
+        msg.innerText = "Email ou senha inválidos.";
         btn.disabled = false;
         btn.innerText = "Entrar";
-    } else {
-        window.location.href = "checkin.html";
+        return;
     }
+
+    // 3️⃣ Validação EXTRA (importante)
+    if (!data || !data.user) {
+        msg.innerText = "Conta não encontrada. Cadastre-se primeiro.";
+        await supabaseClient.auth.signOut();
+        btn.disabled = false;
+        btn.innerText = "Entrar";
+        return;
+    }
+
+    // 4️⃣ Confirma sessão válida
+    const { data: sessionData } =
+        await supabaseClient.auth.getSession();
+
+    if (!sessionData.session) {
+        msg.innerText = "Sessão inválida. Tente novamente.";
+        btn.disabled = false;
+        btn.innerText = "Entrar";
+        return;
+    }
+
+    // ✅ LOGIN REALMENTE VÁLIDO
+    window.location.href = "checkin.html";
 }
