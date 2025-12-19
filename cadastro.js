@@ -1,6 +1,6 @@
 // --- CONFIGURAÇÃO ---
-const SUPABASE_URL = 'https://yyblrudvyhbvcssqtsja.supabase.co'; 
-const SUPABASE_KEY = 'sb_publishable_cc5_WY8jZIck_ey3fzVuYg_BYSluNjQ';
+const SUPABASE_URL = 'https://yyblrudvyhbvcssqtsja.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5YmxydWR2eWhidmNzc3F0c2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU5ODM5NDAsImV4cCI6MjA4MTU1OTk0MH0.dMuERb-F1G9Jd4ef0Xp5AixhNb6__uFoiYM9fJALmA8'; // anon public
 
 const supabaseClient = supabase.createClient(
   SUPABASE_URL,
@@ -14,13 +14,13 @@ async function fazerCadastro() {
     const btn = document.getElementById('btnCadastrar');
     const msg = document.getElementById('msgErro');
 
-    // Validação simples
     if (!nome || !email || !senha) {
         msg.innerText = "Preencha todos os campos.";
         return;
     }
+
     if (senha.length < 6) {
-        msg.innerText = "A senha deve ter pelo menos 6 dígitos.";
+        msg.innerText = "A senha deve ter pelo menos 6 caracteres.";
         return;
     }
 
@@ -28,35 +28,34 @@ async function fazerCadastro() {
     btn.innerText = "Criando conta...";
     msg.innerText = "";
 
-    // 1. Cria o usuário no Auth (Login)
-    const { data, error } = await supabase.auth.signUp({
-        email: email,
-        password: senha
+    // 1️⃣ CRIA USUÁRIO
+    const { data, error } = await supabaseClient.auth.signUp({
+        email,
+        password: senha,
     });
 
+    console.log('signup:', data, error);
+
     if (error) {
-        console.error(error);
-        msg.innerText = "Erro: " + error.message;
+        msg.innerText = error.message;
         btn.disabled = false;
         btn.innerText = "Criar Conta";
         return;
     }
 
-    // 2. Atualiza o nome na tabela 'perfis'
-    // O gatilho automático que criamos já criou a linha, agora vamos só atualizar o nome
+    // 2️⃣ ATUALIZA PERFIL
     if (data.user) {
-        const { errorUpdate } = await supabase
+        const { error: errorUpdate } = await supabaseClient
             .from('perfis')
-            .update({ nome: nome })
+            .update({ nome })
             .eq('id', data.user.id);
 
         if (errorUpdate) {
             console.error(errorUpdate);
-            // Não impede o cadastro, mas avisa
-            alert("Conta criada, mas houve erro ao salvar o nome.");
+            alert("Conta criada, mas erro ao salvar nome.");
         }
 
-        alert("Conta criada com sucesso! Faça login.");
-        window.location.href = "index.html"; // Manda de volta pro login
+        alert("Conta criada com sucesso!");
+        window.location.href = "index.html";
     }
 }
