@@ -6,7 +6,10 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 // Coloque aqui o SEU email de administrador para ver o botão secreto
 const EMAIL_CHEFE = 'seu_email_admin@exemplo.com';
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
 
 // --- 2. VERIFICAÇÃO DE SEGURANÇA E CARREGAMENTO DE PERFIL ---
 async function verificarUsuario() {
