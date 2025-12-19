@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Ponto</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <div class="container">
+        <div id="painelAdmin" style="display: none; margin-bottom: 20px;">
+            <a href="admin.html" style="background: #333; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                Painel Administrativo
+            </a>
+        </div>
+
+        <h1>Check in </h1>
+
+        <div class="card">
+            <label>Confirmar Nome:</label>
+            <input type="text" id="nomeFuncionario" readonly style="background: #f0f0f0; cursor: default;">
+            
+            <div style="text-align: right; margin-bottom: 15px; margin-top: -10px;">
+                <button onclick="atualizarNome()" style="background:none; border:none; color:#3b82f6; cursor:pointer; font-size:12px; padding:0; width: auto; font-weight: normal;">
+                    Alterar nome
+                </button>
+            </div>
+            
+            <div style="text-align: left; margin: 15px 0; border-top: 1px solid #eee; padding-top: 15px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="checkbox" id="foraDaUnidade" onchange="toggleMotivo()">
+                    <span style="font-size: 0.9em; font-weight: bold;">Não estou na unidade / Trabalho Externo</span>
+                </label>
+            </div>
+
+            <div id="campoMotivo" style="display: none; margin-bottom: 15px;">
+                <label for="textoMotivo" style="color: #d97706; font-weight: bold; display: block; margin-bottom: 5px;">
+                    📍 Informe o Local / Destino:
+                </label>
+                <input type="text" id="textoMotivo" placeholder="Ex: Batalhão, Fórum, Hospital, Viatura..." style="border: 1px solid #d97706;">
+            </div>
+            
+            <button id="btnCheckIn" onclick="fazerCheckIn()">Fazer Check-in</button>
+            <p id="status" class="status-msg"></p>
+        </div>
+
+        <button onclick="sair()" style="background-color: #ef4444; margin-top: 20px;">Sair / Logout</button>
+    </div>
+
+    <script src="checkin.js"></script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo - Check-ins</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="admin.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+</head>
+<body>
+
+    <div class="container admin-container">
+        <h1>📊 Relatório Diário</h1>
+        
+        <div class="controls no-print">
+            <button onclick="carregarCheckinsDoDia()" class="btn-refresh">🔄 Atualizar Lista</button>
+            <div class="export-buttons">
+                <button onclick="exportarImagem()" style="background-color: #3b82f6;">📸 Baixar como Imagem</button>
+                <button onclick="window.print()" style="background-color: #6366f1;">🖨️ Salvar PDF / Imprimir</button>
+            </div>
+        </div>
+
+        <div id="areaRelatorio" class="relatorio-card">
+            <div class="header-relatorio">
+                <h2>Check-ins: <span id="dataHoje"></span></h2>
+                <p>Relatório de presença</p>
+            </div>
+
+            <table id="tabelaCheckins">
+                <thead>
+                    <tr>
+                        <th>Horário</th>
+                        <th>Nome</th>
+                        <th>Localização</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabela">
+                    </tbody>
+            </table>
+            <p id="totalRodape" style="margin-top: 15px; font-weight: bold; text-align: right;"></p>
+        </div>
+        
+        <a href="index.html" class="link-voltar no-print">← Voltar para Check-in</a>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
