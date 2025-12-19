@@ -12,21 +12,25 @@ const supabaseClient = supabase.createClient(
 
 // --- 2. VERIFICAÇÃO DE SEGURANÇA E CARREGAMENTO DE PERFIL ---
 async function verificarUsuario() {
-    const { data: { user }, error: userError } =
-        await supabaseClient.auth.getUser();
+    // 1️⃣ Pega a sessão primeiro
+    const { data: sessionData, error: sessionError } =
+        await supabaseClient.auth.getSession();
 
-    if (userError || !user) {
+    if (sessionError || !sessionData.session) {
         window.location.href = "index.html";
         return;
     }
 
+    const user = sessionData.session.user;
+
+    // 2️⃣ Busca o perfil
     let nomeExibicao = user.email;
 
     const { data: perfil, error } = await supabaseClient
         .from('perfis')
         .select('nome')
         .eq('id', user.id)
-        .single();
+        .maybeSingle(); // 👈 evita erro se não existir
 
     if (error) {
         console.error('Erro ao buscar perfil:', error);
@@ -36,12 +40,18 @@ async function verificarUsuario() {
         nomeExibicao = perfil.nome;
     }
 
-    document.getElementById('nomeFuncionario').value = nomeExibicao;
+    // 3️⃣ Preenche o campo
+    const campoNome = document.getElementById('nomeFuncionario');
+    if (campoNome) {
+        campoNome.value = nomeExibicao;
+    }
 
+    // 4️⃣ Verifica admin
     if (user.email === EMAIL_CHEFE) {
         document.getElementById('painelAdmin').style.display = 'block';
     }
 }
+
 
 
 // Executa assim que a página abre
